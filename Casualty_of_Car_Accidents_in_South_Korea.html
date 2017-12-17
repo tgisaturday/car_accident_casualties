@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+
+
+<html>
+<head>
+	<title>Casualty of Car Accidents in South Korea</title>
+	<meta charset="utf-8">
+	<meta name="generator" content="leafletR">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.css" />
+	<script src="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script>
+	<script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+	<link rel="dat1" type="application/json" href="accidents.geojson" />
+	<link rel="dat2" type="application/json" href="accidents.geojson" />
+	<style type="text/css">
+	
+	
+		body {
+			padding: 0;
+			margin: 0;
+		}
+		html, body, #map {
+			height: 100%;
+		}
+		.legend {
+			padding: 6px 8px;
+			font: 14px/16px Arial, Helvetica, sans-serif;
+			background: white;
+			background: rgba(255,255,255,0.8);
+			box-shadow: 0 0 15px rgba(0,0,0,0.2);
+			border-radius: 5px;
+			line-height: 18px;
+			color: #555;
+		}
+		.legend i {
+			width: 17px;
+			height: 17px;
+			float: left;
+			margin-right: 8px;
+		}
+		.legend table, .legend td {
+			border: none;
+		}
+		.value {
+			border: none;
+			padding: 0px 0px 0px 8px;
+			text-align: center;
+			vertical-align: middle;
+		}
+		.circle {
+			border: none;
+			padding: 0px;
+			text-align: center;
+			vertical-align: middle;
+		}
+		.shape {
+			padding: 0px;
+			text-align: center;
+			vertical-align: middle;
+		}
+		.ln {
+			stroke: #0033ff;
+			stroke-width: 5;
+			stroke-opacity: 0.5;
+			stroke-linecap: round;
+		}
+		.plgn {
+			fill: #0033ff;
+			fill-opacity: 0.5;
+			stroke: #0033ff;
+			stroke-width: 4;
+			stroke-opacity: 0.5;
+			stroke-linejoin: round;
+		}
+		.mrks {
+		    padding: 0px;
+			text-align: center;
+		    height:30px;
+		}
+		.mrkm {
+			padding: 0px;
+			text-align: center;
+		    height:40px;
+		}
+		.mrkl {
+			padding: 0px;
+			text-align: center;
+		    height:52px;
+		}
+	</style>
+</head>
+<body>
+	<div id="map"></div>
+	<script type="text/javascript">
+		var map = L.map('map');
+		
+		// scale bar
+		L.control.scale().addTo(map);
+
+		// base layer
+		var baseMaps = {};
+		var baseMap = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {"attribution":"&copy; <a href=\"http://openstreetmap.org/copyright\", target=\"_blank\">OpenStreetMap contributors<\/a>"});
+		baseMap.addTo(map);
+		baseMaps["OpenStreetMap"] = baseMap;
+
+		// popup
+		function onEachFeature(feature, layer) {
+			if (feature.properties &&  feature.properties["casualty"]) {
+				layer.bindPopup("casualty: " + feature.properties["casualty"]);
+			}
+		}
+
+		// styling
+		function getValue1(x) {
+			return x > 100 ? "#808080" :
+			       x >= 60 ? "#FF0000" :
+			       x >= 40 ? "#FF5500" :
+			       x >= 20 ? "#FFAA00" :
+			       x >= 10 ? "#FFFF00" :
+			       x >= 0 ? "#FFFF80" :
+			       "#808080";
+		}			
+		function style1(feature) {
+			return {
+				"color": getValue1(feature.properties["casualty"]),
+				"radius": getValue2(feature.properties["casualty"]),
+				"fillOpacity": 0.6
+			};
+		}
+		function getValue2(x) {
+			return x > 100 ? 35 :
+			       x >= 60 ? 30 :
+			       x >= 40 ? 25 :
+			       x >= 20 ? 20 :
+			       x >= 10 ? 10 :
+			       x >= 0 ? 5 :
+			       0;
+		}			
+
+
+		// data layers
+		var layers = {};
+		var group = new L.featureGroup;
+		function addDataToMap(data, style, label, layer, lc) {
+			layers[layer] = L.geoJson(data, {
+				onEachFeature: (typeof onEachFeature == "undefined") ? undefined : onEachFeature,
+				pointToLayer: (typeof label == "undefined") ? (function (feature, latlng) {return L.circleMarker(latlng);}) : (function (feature, latlng) {return L.circleMarker(latlng).bindLabel(feature.properties[label], {direction: 'right'});}),
+				style: style
+			});
+			layers[layer].addTo(map);	
+			group.addLayer(layers[layer])
+			map.fitBounds(group.getBounds());
+
+			// layer control
+			if(lc != undefined) {
+				L.control.layers(null, layers).addTo(map);
+			};
+		};
+		
+		if(typeof style1 == "undefined") style1 = undefined;
+		if(typeof label1 == "undefined") label1 = undefined;
+		$.getJSON($("link[rel='dat1']").attr("href"), function(x) {addDataToMap(x, style1, label1, "accidents")});
+
+
+		// legend
+		var legend = L.control({position: 'bottomright'});
+		legend.onAdd = function(map) {
+			var div = L.DomUtil.create('div', 'legend');
+			var labels1 = [];
+			var grades1 = [0, 10, 20, 40, 60, 100];
+			div.innerHTML += 'casualty<br>'
+			for (var i = 0; i < grades1.length-1; i++) { 
+				div.innerHTML +=
+		'<i style="background:' + getValue1(grades1[i]) + '"></i> ' +
+					grades1[i] + '&ndash;' + grades1[i + 1] + '<br><r>';
+			}
+			var labels2 = [];
+			var grades2 = [0, 10, 20, 40, 60, 100];
+			div.innerHTML += 'casualty<br>'
+				div.innerHTML += '<table style="border: none;"><tr><td class="circle" style="width: 62px;"><svg style="width: 62px; height: 62px;" xmlns="http://www.w3.org/2000/svg" version="1.1"><circle class="crclrad" cx="31" cy="56" r="5" fill-opacity= "0.2" /><circle class="crclrad" cx="31" cy="51" r="10" fill-opacity= "0.2"/><circle class="crclrad" cx="31" cy="41" r="20" fill-opacity= "0.2"/><circle class="crclrad" cx="31" cy="36" r="25" fill-opacity= "0.2" /><circle class="crclrad" cx="31" cy="31" r="30" fill-opacity= "0.2"/></svg></td><td class="value">60&ndash;100<br>40&ndash;60<br>20&ndash;40<br>10&ndash;20<br>0&ndash;10</td></tr></table>'
+			return div;
+		};
+		legend.addTo(map);
+	</script>
+</body>
+</html>
